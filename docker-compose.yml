@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  llm-services:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-services
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # Self-hosted Chat providers (FREE - no API costs)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - LOCALAI_BASE_URL=${LOCALAI_BASE_URL:-http://localai:8080}
+      # Self-hosted Image providers (FREE - no API costs)
+      - STABLE_DIFFUSION_URL=${STABLE_DIFFUSION_URL:-http://stable-diffusion:7860}
+      # Self-hosted TTS providers (FREE - no API costs)
+      - PIPER_TTS_URL=${PIPER_TTS_URL:-}
+      - COQUI_TTS_URL=${COQUI_TTS_URL:-http://coqui-tts:5002}
+      # Security
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - llm-network
+    depends_on:
+      - ollama
+      - stable-diffusion
+      - coqui-tts
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Ollama - Self-hosted LLM (FREE, runs on your Hetzner server)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - llm-network
+    # GPU support (uncomment if you have NVIDIA GPU on Hetzner)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Stable Diffusion WebUI - Self-hosted image generation (FREE)
+  stable-diffusion:
+    image: ghcr.io/ainsoft-ai/stable-diffusion-webui-docker:latest
+    container_name: stable-diffusion
+    ports:
+      - "7860:7860"
+    volumes:
+      - stable-diffusion-data:/data
+    restart: unless-stopped
+    networks:
+      - llm-network
+    # GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Coqui TTS - Self-hosted text-to-speech (FREE)
+  # Note: Coqui TTS requires model download on first run. It will download automatically.
+  coqui-tts:
+    image: ghcr.io/coqui-ai/tts:latest
+    container_name: coqui-tts
+    ports:
+      - "5002:5002"
+    volumes:
+      - coqui-tts-data:/root/.local/share/tts
+    restart: unless-stopped
+    networks:
+      - llm-network
+    environment:
+      # Using XTTS v2 for high-quality, multilingual TTS with voice cloning
+      - TTS_MODEL=tts_models/multilingual/multi-dataset/xtts_v2
+      - TTS_PORT=5002
+      - CUDA_VISIBLE_DEVICES=0  # Use GPU if available
+
+  # Optional: LocalAI for alternative self-hosted LLM (FREE)
+  localai:
+    image: localai/localai:latest-aio-cpu
+    container_name: localai
+    ports:
+      - "8080:8080"
+    volumes:
+      - localai-data:/models
+    environment:
+      - MODELS_PATH=/models
+    restart: unless-stopped
+    networks:
+      - llm-network
+    profiles:
+      - localai
+
+networks:
+  llm-network:
+    driver: bridge
+
+volumes:
+  ollama-data:
+  stable-diffusion-data:
+  coqui-tts-data:
+  localai-data:
