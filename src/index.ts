@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import { ttsRouter } from "./routes/tts.js";
 import { chatRouter } from "./routes/chat.js";
 import { imageRouter } from "./routes/images.js";
+import { translationRouter } from "./routes/translation.js";
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.get("/health", (req, res) => {
 app.use("/api/tts", ttsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/images", imageRouter);
+app.use("/api/translate", translationRouter);
 
 // 404 handler
 app.use((req, res) => {
@@ -76,6 +78,7 @@ const server = app.listen(PORT, () => {
   console.log(`📝 TTS: POST /api/tts`);
   console.log(`💬 Chat: POST /api/chat`);
   console.log(`🎨 Images: POST /api/images`);
+  console.log(`🌍 Translate: POST /api/translate`);
   console.log(`🔒 Security: Rate limiting enabled`);
   if (allowedOrigins.length === 0) {
     console.warn(`⚠️  WARNING: CORS is disabled. Set ALLOWED_ORIGINS in production!`);
