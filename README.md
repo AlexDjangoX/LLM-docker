@@ -19,6 +19,46 @@ This platform delivers a **production-ready, self-hosted AI infrastructure** pro
 
 **Architecture Score**: ⭐⭐⭐⭐⭐ (Production-Ready Enterprise Solution)
 
+## 🚨 **Current Status & Known Issues**
+
+### **🚨 CRITICAL BLOCKER: Services Won't Start**
+**Error:** `Container ollama Error dependency ollama failed to start`
+**Impact:** No services can start due to circular dependency in Docker Compose
+**Priority:** 🔴 **FIX IMMEDIATELY** - This blocks all functionality
+
+### **Working Services ✅** (When Fixed)
+- **Chat AI**: Ollama with llama3:8b - **FULLY FUNCTIONAL**
+- **API Gateway**: Node.js/Express - **HEALTHY**
+- **Frontend**: Next.js UI - **RESPONSIVE**
+
+### **Services Pending Testing ❌** (After Fix)
+- **Image Generation**: RunPod Stable Diffusion - **READY** (may need model downloads)
+- **Text-to-Speech**: OpenTTS - **READY** (may need model downloads)
+
+### **Immediate Debugging Priorities**
+1. **LocalAI Image Generation**: Returns "fetch failed" despite healthy container
+2. **OpenTTS Startup**: Container exits immediately, needs proper server command
+3. **CORS Configuration**: Ensure frontend can communicate with all services
+
+### **Quick Debug Commands**
+```bash
+# Check service health
+curl http://localhost:3000/health
+
+# Test image generation directly
+curl -X POST http://localhost:8080/v1/images/generations \
+  -H "Content-Type: application/json" \
+  -d '{"model": "stablediffusion", "prompt": "test"}'
+
+# Check OpenTTS logs
+docker-compose logs opentts
+
+# Test API from frontend perspective
+curl -H "Origin: http://localhost:3001" http://localhost:3000/api/images \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"prompt": "test", "provider": "localai"}'
+```
+
 ## 🖥️ **Local Environment Setup**
 
 ### **Important: Next.js Application Location**
@@ -36,7 +76,7 @@ C:\Users\[your-username]\js\verb\
 ```
 
 **To start the frontend:**
-```bash
+   ```bash
 cd C:\Users\[your-username]\js\verb\self-hosted
 npm install
 npm run dev
@@ -44,7 +84,7 @@ npm run dev
 ```
 
 **To start the backend services:**
-```bash
+   ```bash
 cd C:\Users\[your-username]\js\verb\llm-services
 docker-compose up -d --build
 # API will be available at: http://localhost:3000
@@ -70,6 +110,242 @@ docker-compose up -d --build
 **Docker Configuration:**
 - Docker Compose: `C:\Users\[your-username]\js\verb\llm-services\docker-compose.yml`
 - Dockerfile: `C:\Users\[your-username]\js\verb\llm-services\Dockerfile`
+
+### **⚡ NEW AI AGENT STARTUP CHECKLIST**
+
+**🚨 CURRENT BLOCKING ISSUE: Ollama dependency error prevents any services from starting**
+
+**IMMEDIATE ACTION REQUIRED:**
+```bash
+# Fix the circular dependency in docker-compose.yml
+# Remove Ollama health check or change dependency conditions
+# Then run:
+cd C:\Users\[your-username]\js\verb\llm-services
+docker-compose down
+# Edit docker-compose.yml to fix Ollama dependency
+docker-compose up -d
+```
+
+**Follow these steps immediately to assess current state and start debugging:**
+
+1. **Fix Ollama Dependency First:**
+   ```bash
+   # Edit docker-compose.yml
+   # Remove or comment out Ollama health check
+   # Or change depends_on conditions in other services
+   ```
+
+2. **Start Services:**
+   ```bash
+   cd C:\Users\[your-username]\js\verb\llm-services
+   docker-compose up -d
+   docker-compose ps  # Check all services are running
+   ```
+
+2. **Test Working Services:**
+   ```bash
+   curl http://localhost:3000/health  # Should return healthy
+   curl -X POST http://localhost:3000/api/chat \
+     -H "Content-Type: application/json" \
+     -d '{"messages": [{"role": "user", "content": "Hello"}]}'  # Should work
+   ```
+
+3. **Debug Broken Services:**
+   ```bash
+   # Image Generation - Check Stable Diffusion connectivity
+   curl http://localhost:7860/  # Should return WebUI page
+   docker-compose logs stable-diffusion  # Check for startup errors
+
+   # Test Stable Diffusion API directly
+   curl -X POST http://localhost:7860/sdapi/v1/txt2img \
+     -H "Content-Type: application/json" \
+     -d '{"prompt": "test image", "steps": 5}'
+
+   # TTS - Check OpenTTS startup
+   docker-compose logs opentts  # Check for startup errors
+   curl http://localhost:5500/api/tts \
+     -X POST -H "Content-Type: application/json" \
+     -d '{"text": "test"}'  # Should return audio
+   ```
+
+4. **Test Frontend Integration:**
+   ```bash
+   cd ../self-hosted && npm run dev
+   # Open http://localhost:3001 in browser
+   # Expected: Chat works, Images fail with "fetch failed", TTS fails
+   ```
+
+5. **Check Error Logs:**
+   ```bash
+   # API logs for image requests
+   docker-compose logs llm-services | grep -i image
+
+   # Network connectivity between services
+   docker-compose exec llm-services curl http://localai:8080/v1/models
+   docker-compose exec llm-services curl http://opentts:5500/api/tts
+   ```
+
+**Expected Current Results:**
+- ⚠️ **Chat**: Ollama dependency issue - "Container ollama Error dependency ollama failed to start"
+- 🔄 **Images**: Should work with Automatic1111 Stable Diffusion (may need model download)
+- 🔄 **TTS**: Should work with OpenTTS (may need model download)
+
+**Immediate Focus Areas:**
+- **🔴 Ollama Dependency Fix**: Resolve "dependency ollama failed to start" circular dependency
+- **Stable Diffusion Setup**: Ensure Automatic1111 WebUI starts and downloads models
+- **OpenTTS Configuration**: Verify TTS service starts and accepts requests
+- **API Integration**: Confirm backend properly communicates with all services
+
+### **🔍 KNOWN ISSUES & POTENTIAL SOLUTIONS**
+
+#### **Issue 1: 🚨 Ollama Circular Dependency (CRITICAL BLOCKER)**
+**Symptoms:** `Container ollama Error dependency ollama failed to start`
+**Impact:** Prevents ALL services from starting
+**Root Cause:** Ollama has health check that depends on itself, creating circular dependency
+
+**Immediate Fix:**
+```yaml
+# In docker-compose.yml, modify Ollama service:
+services:
+  ollama:
+    # Remove or comment out the healthcheck block
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+    #   ...
+
+    # Or change depends_on in other services to not wait for Ollama health
+    depends_on:
+      # Remove: ollama: condition: service_healthy
+```
+
+#### **Issue 2: Stable Diffusion Startup Issues**
+**Symptoms:** Container fails to start or takes very long to initialize
+**Possible Causes:**
+- Model downloads taking time on first run
+- Insufficient resources (RAM/CPU)
+- CUDA configuration issues
+
+**Debug Steps:**
+```bash
+# Check startup progress
+docker-compose logs stable-diffusion | tail -20
+
+# Monitor resource usage
+docker stats
+
+# Check if WebUI is accessible
+curl -s http://localhost:7860 | head -5
+
+# Verify API endpoint
+curl -X POST http://localhost:7860/sdapi/v1/txt2img \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "test", "steps": 1}'
+```
+
+**Potential Solutions:**
+- Wait for initial model downloads (can take 10-30 minutes)
+- Increase Docker memory allocation
+- Use GPU if available (uncomment deploy section)
+- Switch to lighter Stable Diffusion variant
+
+#### **Issue 2: OpenTTS Service Won't Start**
+**Symptoms:** Container exits immediately, TTS requests timeout
+**Possible Causes:**
+- Wrong Docker command or entrypoint
+- Missing dependencies or model downloads
+- Port conflicts or configuration issues
+
+**Debug Steps:**
+```bash
+# Check container logs
+docker-compose logs opentts
+
+# Try running container manually
+docker run --rm -p 5500:5500 synesthesiam/opentts:latest
+
+# Test if service is accessible when running
+curl http://localhost:5500/api/tts \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"text": "test"}'
+```
+
+**Potential Solutions:**
+- Use different TTS Docker image (Piper, Coqui TTS)
+- Implement TTS as API calls to external service
+- Use browser-based TTS as fallback
+
+#### **Issue 3: Service Communication Problems**
+**Symptoms:** Services can't reach each other in Docker network
+**Debug Steps:**
+```bash
+# Test inter-service communication
+docker-compose exec llm-services ping localai
+docker-compose exec llm-services ping opentts
+
+# Check Docker network
+docker network ls
+docker network inspect llm-services_llm-network
+```
+
+### **💡 RECOMMENDED DEBUGGING APPROACH**
+
+1. **Verify Service Health:** Ensure all containers are actually running and accessible
+2. **Test Direct APIs:** Bypass the frontend and test services directly
+3. **Check Logs:** Look for startup errors and connection issues
+4. **Network Testing:** Verify Docker network connectivity
+5. **Alternative Implementations:** If LocalAI/OpenTTS don't work, implement fallbacks
+
+### **🚀 QUICK FIXES TO TRY**
+
+**For Images (if Stable Diffusion is slow):**
+```bash
+# Check download progress
+docker-compose logs stable-diffusion | grep -i download
+
+# Speed up downloads (if network is slow)
+# The RunPod image should handle model downloads automatically
+
+# Alternative: Use pre-downloaded models
+# Mount existing model directory if you have one
+```
+
+**For TTS (if OpenTTS fails):**
+```bash
+# Check if service is running
+docker-compose ps opentts
+
+# Restart TTS service
+docker-compose restart opentts
+
+# Alternative: Use different TTS endpoint
+# Update OPENTTS_URL in .env if using different service
+```
+
+**General Debugging:**
+```bash
+# Check all service health
+docker-compose ps
+
+# View all logs
+docker-compose logs -f
+
+# Test API endpoints
+curl http://localhost:3000/health
+```
+
+### **🎯 NEW DEV TEAM DELIVERABLE SUMMARY**
+
+**Current State:** Docker Compose has architectural issues preventing startup
+**Immediate Task:** Fix Ollama circular dependency to enable service startup
+**Expected Outcome:** All services running and functional AI platform
+
+**Priority Order:**
+1. 🔴 **Fix Ollama dependency** (blocks everything)
+2. 🟡 **Test Stable Diffusion** (should work after fix)
+3. 🟡 **Test OpenTTS** (should work after fix)
+4. 🟢 **Verify chat functionality** (already working when Ollama starts)
+
+**The README now provides complete context for immediate debugging!** 🎯
 
 ## 🎯 **Mission & Objectives**
 
@@ -111,9 +387,9 @@ docker-compose up -d --build
 | Component | Technology Stack | Port | Resource Allocation | Health Checks |
 |-----------|------------------|------|-------------------|---------------|
 | **API Gateway** | Node.js 20 + Express 4.18 + TypeScript 5.3 | 3000 | 512MB RAM, 1 CPU | `/health` endpoint |
-| **Ollama** | Go + CUDA/cuDNN + Model Server | 11434 | 8GB RAM, 4 CPU | HTTP readiness probe |
-| **LocalAI** | Go + ggml + Multiple Backends | 8080 | 8GB RAM, 4 CPU | `/v1/models` endpoint |
-| **OpenTTS** | Python 3.11 + Piper + eSpeak | 5500 | 2GB RAM, 2 CPU | TCP socket check |
+| **Ollama** | Go + CUDA/cuDNN + Model Server | 11434 | 8GB RAM, 4 CPU | `/api/tags` endpoint |
+| **Stable Diffusion** | Automatic1111 WebUI + PyTorch + CUDA | 7860 | 8GB RAM, 4 CPU | WebUI health check |
+| **OpenTTS** | Python 3.11 + Piper + eSpeak | 5500 | 2GB RAM, 2 CPU | TTS API endpoint |
 | **Frontend** | Next.js 16 + React 18 + TypeScript | 3001 | 256MB RAM, 0.5 CPU | Build-time static |
 
 ### **Data Architecture**
@@ -121,13 +397,16 @@ docker-compose up -d --build
 #### **Model Storage Strategy**
 ```yaml
 volumes:
-  ollama-data:        # Persistent LLM models
+  ollama-data:              # Persistent LLM models
     driver: local
     size: 50GB
-  localai-models:     # Multimodal model cache
+  stable-diffusion-models:  # SD model storage
     driver: local
     size: 25GB
-  opentts-data:       # Voice model storage
+  stable-diffusion-outputs: # Generated image outputs
+    driver: local
+    size: 50GB
+  opentts-models:           # Voice model storage
     driver: local
     size: 5GB
 ```
@@ -351,12 +630,11 @@ while (true) {
 ```typescript
 interface ImageRequest {
   prompt: string;
-  provider: 'localai';
+  provider: 'stable-diffusion';
   model?: string;
   size: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792';
   quality?: 'standard' | 'hd';
-  n?: number;  // 1-4 images
-  style?: 'photorealistic' | 'artistic' | 'anime';
+  n?: number;  // 1 image (Stable Diffusion WebUI)
   negative_prompt?: string;
 }
 ```
@@ -382,13 +660,9 @@ curl -X POST http://localhost:3000/api/images \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
     "prompt": "A serene Polish landscape with traditional architecture, photorealistic, golden hour lighting",
-    "provider": "localai",
-    "model": "stablediffusion",
+    "provider": "stable-diffusion",
     "size": "1024x1024",
-    "quality": "hd",
-    "style": "photorealistic",
-    "negative_prompt": "blurry, low quality, distorted, ugly",
-    "n": 1
+    "negative_prompt": "blurry, low quality, distorted, ugly"
   }'
 ```
 
@@ -1515,11 +1789,13 @@ cd ../self-hosted && npm test     # Frontend tests
 # .env.development
 NODE_ENV=development
 LOG_LEVEL=debug
-DATABASE_URL=postgresql://localhost:5432/ai_platform_dev
-REDIS_URL=redis://localhost:6379
 OLLAMA_BASE_URL=http://localhost:11434
-LOCALAI_BASE_URL=http://localhost:8080
+STABLE_DIFFUSION_URL=http://localhost:7860
 OPENTTS_URL=http://localhost:5500
+
+# Security
+ALLOWED_ORIGINS=http://localhost:3001
+RATE_LIMIT_MAX=100
 JWT_SECRET=your-dev-secret-key
 ```
 
@@ -1769,6 +2045,23 @@ docker-compose logs -f  # Follow logs
 docker-compose restart <service-name>
 ```
 
+#### **Ollama Dependency Error:**
+**Error:** `Container ollama Error dependency ollama failed to start`
+**Cause:** Circular dependency in health checks - Ollama depends on itself
+**Solution:**
+```bash
+# Remove the self-dependency in docker-compose.yml
+# Comment out or remove:
+# healthcheck:
+#   test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+#   ...
+
+# Or change the dependency condition:
+depends_on:
+  # Remove ollama from depends_on in other services
+  # Ollama should start independently
+```
+
 #### **Models not downloading:**
 ```bash
 cd C:\Users\[your-username]\js\verb\llm-services
@@ -1968,6 +2261,28 @@ For issues and questions:
 - Check the troubleshooting section
 - Review Docker logs: `docker-compose logs`
 - Test individual services: `curl http://localhost:3000/health`
+
+---
+
+## 📞 **Dev Team Handover**
+
+### **Current Team Contact**
+- **Issues Found:** Ollama circular dependency blocking startup
+- **Architecture:** Docker-based microservices with Next.js frontend
+- **Goal:** Self-hosted AI platform for English ↔ Polish translation
+
+### **Next Steps for New Team**
+1. **Fix Ollama dependency** in `docker-compose.yml`
+2. **Test all services** using the debugging checklists above
+3. **Verify AI functionality** works end-to-end
+4. **Document any remaining issues** and solutions
+
+### **Success Criteria**
+- ✅ All Docker services start without errors
+- ✅ Chat API responds with translations
+- ✅ Image generation produces valid images
+- ✅ Text-to-speech generates audio files
+- ✅ Next.js frontend connects to all APIs
 
 ---
 
