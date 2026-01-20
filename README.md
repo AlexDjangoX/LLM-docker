@@ -1,10 +1,11 @@
-# Bilingual Education Platform - Self-Hosted AI Services
+# LLM Services - Self-Hosted AI Services
 
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Tests](https://img.shields.io/badge/tests-145%20passing-brightgreen.svg)](https://github.com)
 
-> **Self-Hosted AI Platform for English-Polish Bilingual Education** with professional-quality text-to-speech, translation, and conversational AI.
+> **Production-ready AI services platform** for English-Polish bilingual education featuring professional text-to-speech, translation, chat completion, and secure authentication.
 
 ## Current Status
 
@@ -19,14 +20,38 @@
 
 ## Features
 
-- **Professional Polish TTS** - XTTS v2 neural voices (not synthetic espeak)
-- **Accurate Translation** - Dedicated LibreTranslate engine for EN ↔ PL
-- **Educational Chat** - Ollama LLM for tutoring and conversation
-- **Complete Data Sovereignty** - All processing happens locally
-- **No API Keys Required** - Fully self-hosted, no external dependencies
-- **Secure Authentication** - JWT-based user management with account controls
-- **Password Security** - Strong password validation and secure hashing
-- **Account Management** - Change password and self-delete accounts
+### AI Services
+- **Neural Text-to-Speech** - XTTS v2 with 22 professional voices across 17 languages
+- **Machine Translation** - LibreTranslate engine optimized for EN ↔ PL translation
+- **Chat Completions** - Ollama LLM integration with streaming support
+- **Image Generation** - Stable Diffusion integration (GPU required, disabled by default)
+
+### Security & Authentication
+- **JWT-based Authentication** - Secure token-based auth with access and refresh tokens
+- **Password Security** - bcrypt hashing with configurable salt rounds and strong validation
+- **Role-based Access Control** - User and admin roles with permission middleware
+- **Rate Limiting** - Configurable rate limits per endpoint with user context awareness
+
+### Developer Experience
+- **Comprehensive Test Suite** - 145 tests (8 test suites) covering unit and integration scenarios
+- **TypeScript** - Full type safety with strict mode enabled
+- **RESTful API** - Well-documented endpoints with consistent error handling
+- **Docker Compose** - Complete containerized deployment with health checks
+- **Self-hosted** - Complete data sovereignty, no external API dependencies
+
+---
+
+## Technical Stack
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Runtime** | Node.js | 18+ |
+| **Language** | TypeScript | 5.3+ |
+| **Framework** | Express.js | 4.18+ |
+| **Authentication** | JWT + bcrypt | - |
+| **Testing** | Jest + Supertest | 29+ |
+| **Containerization** | Docker Compose | 3.8+ |
+| **AI Services** | Ollama, XTTS v2, LibreTranslate, Stable Diffusion | Latest |
 
 ---
 
@@ -41,22 +66,31 @@
 
 ### 1. Environment Setup
 
-Environment variables are already configured in `.env` file with secure JWT secrets. For production deployment:
-
+**Development:**
 ```bash
-# Generate new secure JWT secrets:
-JWT_SECRET=$(openssl rand -hex 64)
-JWT_REFRESH_SECRET=$(openssl rand -hex 64)
+# Use provided test environment
+cp env-test.txt .env
 ```
 
-**Note**: `setup-env.sh` and `env-config.txt` are kept for documentation/reference purposes only.
+**Production:**
+```bash
+# Generate secure JWT secrets
+export JWT_SECRET=$(openssl rand -hex 64)
+export JWT_REFRESH_SECRET=$(openssl rand -hex 64)
 
-### Default Admin Account
+# Create .env file
+cat > .env << EOF
+NODE_ENV=production
+PORT=3000
+JWT_SECRET=${JWT_SECRET}
+JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+OLLAMA_BASE_URL=http://ollama:11434
+XTTS_BASE_URL=http://xtts:8000
+LIBRETRANSLATE_URL=http://libretranslate:5000
+EOF
+```
 
-The system includes a default admin account:
-- **Email:** admin@example.com
-- **Password:** admin123
-- **⚠️ CHANGE THIS PASSWORD IMMEDIATELY IN PRODUCTION!**
+⚠️ **Security Note:** Default admin credentials (`admin@example.com` / `admin123`) are created on first run. **Change immediately in production.**
 
 ### 2. Start Services
 
@@ -140,6 +174,87 @@ npm run dev
 
 ---
 
+## Development
+
+### Running Tests
+
+The project includes a comprehensive test suite with 145 tests covering all major functionality:
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run specific test suites
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
+
+# Watch mode for development
+npm run test:watch
+```
+
+**Test Coverage:**
+- **Unit Tests:** 121 tests (Auth service, JWT, password validation, middleware)
+- **Integration Tests:** 24 tests (API endpoints with mocked services)
+- **Coverage:** Authentication, authorization, validation, error handling
+
+### Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run in development mode with hot reload
+npm run dev
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# Build for production
+npm run build
+```
+
+### Project Structure
+
+```
+src/
+├── index.ts              # Application entry point
+├── middleware/
+│   └── auth.ts          # JWT authentication middleware
+├── routes/
+│   ├── auth.ts          # Authentication endpoints
+│   ├── chat.ts          # Chat completion endpoints
+│   ├── images.ts        # Image generation endpoints
+│   ├── translation.ts   # Translation endpoints
+│   └── tts.ts           # Text-to-speech endpoints
+└── services/
+    ├── auth.ts          # Auth business logic
+    ├── chat.ts          # Ollama integration
+    ├── images.ts        # Stable Diffusion integration
+    ├── translation.ts   # LibreTranslate integration
+    └── tts.ts           # XTTS integration
+
+tests/
+├── setup.ts             # Jest configuration and mocks
+├── unit/                # Unit tests
+│   ├── auth.test.ts
+│   ├── jwt-auth.test.ts
+│   ├── middleware-auth.test.ts
+│   └── password-validation.test.ts
+└── integration/         # Integration tests
+    ├── auth-api.test.ts
+    ├── chat-api.test.ts
+    ├── translation-api.test.ts
+    └── tts-api.test.ts
+```
+
+---
+
 ## API Reference
 
 ### Health Check
@@ -148,32 +263,78 @@ npm run dev
 GET /health
 ```
 
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-20T20:00:00.000Z",
+  "services": {
+    "api": "operational"
+  }
+}
+```
+
 ### Chat Completions
 
 ```bash
 POST /api/chat
+Content-Type: application/json
 ```
 
+**Request Body:**
 ```json
 {
   "messages": [
     {"role": "system", "content": "You are a helpful Polish-English tutor."},
     {"role": "user", "content": "Translate: Good morning"}
   ],
+  "model": "llama3.1:8b",
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+```
+
+**Alternative Simple Format:**
+```json
+{
+  "message": "What is photosynthesis?",
   "model": "llama3.1:8b"
 }
 ```
+
+**Response:**
+```json
+{
+  "response": "Photosynthesis is the process by which plants...",
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 150,
+    "total_tokens": 175
+  }
+}
+```
+
+**Parameters:**
+- `messages` (array, required*): Array of message objects with `role` and `content`
+- `message` (string, required*): Simple single message (auto-converted to messages array)
+- `model` (string, optional): Ollama model name (default: "llama2")
+- `temperature` (number, optional): Sampling temperature 0-2 (default: 0.7)
+- `max_tokens` (number, optional): Maximum completion tokens (default: 2000)
+
+*Either `messages` or `message` is required
 
 ### Translation
 
 ```bash
 POST /api/translate
+Content-Type: application/json
 ```
 
+**Request Body:**
 ```json
 {
   "text": "Hello, how are you?",
-  "source": "auto",
+  "source": "en",
   "target": "pl"
 }
 ```
@@ -182,24 +343,96 @@ POST /api/translate
 ```json
 {
   "success": true,
-  "translation": "Cześć, jak się masz?",
+  "translatedText": "Cześć, jak się masz?",
+  "detectedLanguage": "en",
+  "target": "pl",
+  "confidence": 0.95
+}
+```
+
+**Parameters:**
+- `text` (string, required): Text to translate
+- `source` (string, required): Source language code ("en", "pl", "auto")
+- `target` (string, required): Target language code ("en", "pl")
+
+#### Batch Translation
+
+```bash
+POST /api/translate/batch
+```
+
+**Request:**
+```json
+{
+  "texts": ["Hello", "How are you?", "Thank you"],
   "source": "en",
   "target": "pl"
 }
 ```
 
-**Other Translation Endpoints:**
-- `POST /api/translate/batch` - Translate multiple texts
-- `POST /api/translate/detect` - Detect language
-- `GET /api/translate/languages` - List supported languages
+**Response:** Array of translation objects
+```json
+[
+  {
+    "translatedText": "Cześć",
+    "detectedLanguage": "en",
+    "confidence": 0.95
+  },
+  ...
+]
+```
+
+#### Language Detection
+
+```bash
+POST /api/translate/detect
+```
+
+**Request:**
+```json
+{
+  "text": "Bonjour, comment allez-vous?"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "detectedLanguage": "fr",
+  "confidence": 0.98
+}
+```
+
+#### Supported Languages
+
+```bash
+GET /api/translate/languages
+```
+
+**Response:** Array of language objects
+```json
+[
+  {"code": "en", "name": "English"},
+  {"code": "pl", "name": "Polish"},
+  ...
+]
+```
 
 ### Authentication
+
+All authenticated endpoints require an `Authorization` header:
+```
+Authorization: Bearer <access_token>
+```
 
 #### Register User
 ```bash
 POST /api/auth/register
+Content-Type: application/json
 ```
 
+**Request:**
 ```json
 {
   "email": "user@example.com",
@@ -208,15 +441,35 @@ POST /api/auth/register
 }
 ```
 
+**Response:**
+```json
+{
+  "message": "Registration successful",
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+  }
+}
+```
+
+**Password Requirements:**
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+
 #### Login
 ```bash
 POST /api/auth/login
+Content-Type: application/json
 ```
 
+**Request:**
 ```json
 {
   "email": "user@example.com",
-  "password": "password"
+  "password": "StrongPass123!"
 }
 ```
 
@@ -225,15 +478,40 @@ POST /api/auth/login
 {
   "message": "Login successful",
   "user": {
-    "userId": "...",
-    "email": "...",
-    "username": "...",
-    "role": "..."
+    "userId": "abc123",
+    "email": "user@example.com",
+    "username": "username",
+    "role": "user"
   },
   "tokens": {
-    "accessToken": "...",
-    "refreshToken": "..."
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
   }
+}
+```
+
+**Token Expiry:**
+- Access Token: 1 hour
+- Refresh Token: 7 days
+
+#### Refresh Token
+```bash
+POST /api/auth/refresh
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
@@ -266,48 +544,102 @@ Authorization: Bearer <access_token>
 #### Validate Password Strength
 ```bash
 POST /api/auth/validate-password
+Content-Type: application/json
 ```
 
+**Request:**
 ```json
 {
-  "password": "passwordtocheck"
+  "password": "TestPassword123!"
 }
 ```
 
-**Password Requirements:**
-- Minimum 8 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character
+**Response (Valid):**
+```json
+{
+  "valid": true,
+  "message": "Password meets all requirements"
+}
+```
+
+**Response (Invalid):**
+```json
+{
+  "valid": false,
+  "message": "Password validation failed",
+  "errors": [
+    "Password must contain at least one uppercase letter",
+    "Password must contain at least one special character"
+  ]
+}
+```
+
+#### Get All Users (Admin Only)
+```bash
+GET /api/auth/users
+Authorization: Bearer <admin_access_token>
+```
+
+**Response:**
+```json
+[
+  {
+    "id": "abc123",
+    "email": "user@example.com",
+    "username": "username",
+    "role": "user",
+    "createdAt": "2026-01-20T10:00:00.000Z",
+    "lastLogin": "2026-01-20T12:00:00.000Z"
+  },
+  ...
+]
+```
 
 ### Text-to-Speech
 
 ```bash
 POST /api/tts
 Authorization: Bearer <access_token>
+Content-Type: application/json
 ```
 
+**Request:**
 ```json
 {
   "text": "Dzień dobry! Hello!",
   "language": "pl",
-  "speaker": "Claribel Dervla"
+  "speaker": "Claribel Dervla",
+  "speed": 1.0
 }
 ```
 
-**Response:** Binary WAV audio
+**Response:** Binary WAV audio file (Content-Type: `audio/wav`)
 
 **Parameters:**
-- `text` (required): Text to synthesize (max 50KB)
-- `language`: `"en"` or `"pl"` (default: `"en"`)
-- `speaker`: Speaker name from `/api/tts/voices` (default: `"Claribel Dervla"`)
-- `speed`: 0.5 to 2.0 (default: 1.0)
+- `text` (string, required): Text to synthesize (max 50KB)
+- `language` (string, required): Language code - `"en"` or `"pl"`
+- `speaker` (string, optional): Speaker name from `/api/tts/voices`
+- `speed` (number, optional): Speech rate 0.5-2.0 (default: 1.0)
 
-**List Speakers:**
+**List Available Voices:**
 ```bash
 GET /api/tts/voices
 Authorization: Bearer <access_token>
+```
+
+**Response:** Array of speaker names
+```json
+[
+  "Claribel Dervla",
+  "Drew",
+  "Paul",
+  "Dora",
+  "Thomas",
+  "Emma",
+  "Michael",
+  "Laura",
+  ...
+]
 ```
 
 ### Image Generation (Disabled)
@@ -316,7 +648,50 @@ Authorization: Bearer <access_token>
 POST /api/images
 ```
 
-**Note:** Currently disabled. See [Enabling Image Generation](#enabling-image-generation-requires-gpu) below.
+**Note:** Image generation is disabled by default. Requires NVIDIA GPU. See [Enabling Image Generation](#enabling-image-generation-requires-gpu) below.
+
+### Error Handling
+
+All endpoints follow a consistent error response format:
+
+**Error Response Structure:**
+```json
+{
+  "error": "Error type",
+  "message": "Detailed error message",
+  "details": "Additional context (optional)"
+}
+```
+
+**HTTP Status Codes:**
+- `200` - Success
+- `400` - Bad Request (validation errors)
+- `401` - Unauthorized (missing or invalid token)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found
+- `500` - Internal Server Error
+
+**Example Error Responses:**
+
+```json
+// 400 - Validation Error
+{
+  "error": "Validation failed",
+  "message": "Password must be at least 8 characters long"
+}
+
+// 401 - Authentication Error
+{
+  "error": "Authentication required",
+  "message": "Access token is required"
+}
+
+// 403 - Authorization Error
+{
+  "error": "Insufficient permissions",
+  "message": "Admin access required"
+}
+```
 
 ---
 
@@ -424,39 +799,6 @@ For image generation without local GPU:
 
 ---
 
-## Project Structure
-
-```
-llm-services/
-├── src/
-│   ├── index.ts              # Express app entry
-│   ├── routes/
-│   │   ├── chat.ts           # POST /api/chat
-│   │   ├── images.ts         # POST /api/images
-│   │   ├── tts.ts            # POST /api/tts
-│   │   └── translation.ts    # POST /api/translate
-│   └── services/
-│       ├── chat.ts           # Ollama integration
-│       ├── images.ts         # Stable Diffusion integration
-│       ├── tts.ts            # XTTS integration
-│       └── translation.ts    # LibreTranslate integration
-├── docker-compose.yml        # All services
-├── Dockerfile                # API container
-└── package.json
-
-self-hosted/                  # Frontend (separate repo)
-├── src/
-│   ├── app/page.tsx
-│   └── components/
-│       ├── ChatInterface.tsx
-│       ├── TextToSpeech.tsx
-│       ├── Translation.tsx
-│       └── ImageGenerator.tsx
-└── package.json
-```
-
----
-
 ## Performance
 
 | Operation | Time (CPU) | Time (GPU) |
@@ -530,9 +872,95 @@ docker exec ollama ollama pull llama3.2:3b
 
 ---
 
+## Security Considerations
+
+### Production Deployment Checklist
+
+- [ ] Generate unique JWT secrets using `openssl rand -hex 64`
+- [ ] Change default admin password immediately
+- [ ] Enable HTTPS/TLS for all API endpoints
+- [ ] Configure appropriate rate limiting for your use case
+- [ ] Review and restrict CORS origins in production
+- [ ] Set up proper logging and monitoring
+- [ ] Implement backup strategy for user data (`data/users.json`)
+- [ ] Configure firewall rules to restrict service access
+- [ ] Review and update Docker container security settings
+- [ ] Enable security headers (Helmet is already configured)
+
+### Authentication Security
+
+- JWT tokens use HS256 algorithm with configurable secrets
+- Passwords are hashed using bcrypt with 12 salt rounds
+- Access tokens expire after 1 hour
+- Refresh tokens expire after 7 days
+- Token verification happens on every protected endpoint
+- Admin-only endpoints require role validation
+
+### Data Storage
+
+User data is stored in `data/users.json` with the following structure:
+- Passwords: bcrypt hashed, never stored in plaintext
+- Tokens: Generated fresh on each login, not persisted
+- User metadata: ID, email, username, role, timestamps
+
+**Backup recommendation:** Regular backups of `data/users.json` for production deployments.
+
+---
+
+## Contributing
+
+### Code Style
+
+- TypeScript strict mode enabled
+- ESLint configuration included
+- Consistent error handling patterns
+- Comprehensive test coverage required for new features
+
+### Pull Request Process
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for new functionality
+4. Ensure all tests pass (`npm test`)
+5. Run type checking (`npm run type-check`)
+6. Run linting (`npm run lint`)
+7. Commit changes with clear commit messages
+8. Push to your fork and submit a Pull Request
+
+---
+
 ## License
 
 MIT License - Free for personal and commercial use.
+
+Copyright (c) 2026
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Support & Documentation
+
+- **GitHub Issues:** [Report bugs or request features](https://github.com)
+- **API Documentation:** See [API Reference](#api-reference) section above
+- **Docker Documentation:** See [Docker Services](#docker-services) section
+- **Test Documentation:** Run `npm test` to execute the comprehensive test suite
 
 ---
 

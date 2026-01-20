@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { registerUser, loginUser, refreshAccessToken, getAllUsers, initializeDefaultAdmin, getUserByEmail, changeUserPassword, deleteUserAccount, validatePasswordStrength } from "../services/auth.js";
+import { optionalAuth, requireAdmin } from "../middleware/auth.js";
 
 export const authRouter = Router();
 
@@ -148,10 +149,8 @@ authRouter.post("/refresh", async (req: RefreshRequest, res: Response) => {
 });
 
 // GET /api/auth/users - Get all users (admin only)
-authRouter.get("/users", async (req: Request, res: Response) => {
+authRouter.get("/users", requireAdmin, async (req: Request, res: Response) => {
   try {
-    // This would normally be protected by auth middleware
-    // For now, return all users (in production, add admin check)
     const users = getAllUsers();
 
     res.json({
@@ -169,7 +168,7 @@ authRouter.get("/users", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/change-password - Change user password
-authRouter.post("/change-password", async (req: Request, res: Response) => {
+authRouter.post("/change-password", optionalAuth, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user) {
@@ -209,6 +208,12 @@ authRouter.post("/change-password", async (req: Request, res: Response) => {
           message: error.message,
         });
       }
+      if (error.message.includes("do not match")) {
+        return res.status(400).json({
+          error: "Validation error",
+          message: error.message,
+        });
+      }
     }
 
     res.status(500).json({
@@ -219,7 +224,7 @@ authRouter.post("/change-password", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/delete-account - Delete user account
-authRouter.post("/delete-account", async (req: Request, res: Response) => {
+authRouter.post("/delete-account", optionalAuth, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user) {

@@ -5,7 +5,7 @@ export const ttsRouter = Router();
 
 interface TTSRequest {
   text: string;
-  language?: "en" | "pl";
+  language: "en" | "pl";
   speed?: number;
   speaker?: string;
 }
@@ -14,20 +14,39 @@ interface TTSRequest {
 // Uses Coqui TTS with XTTS v2 model for professional multilingual neural TTS
 ttsRouter.post("/", async (req, res) => {
   try {
-    const { text, language = "en", speed = 1.0, speaker } = req.body as TTSRequest;
+    const { text, language, speed = 1.0, speaker } = req.body as TTSRequest;
 
     // Input validation
     if (!text || typeof text !== "string") {
-      return res.status(400).json({ error: "Text is required and must be a string" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "text is required and must be a string" 
+      });
     }
     if (text.length > 50000) {
-      return res.status(400).json({ error: "Text too long (max 50KB)" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "text too long (max 50KB)" 
+      });
     }
     if (text.length < 1) {
-      return res.status(400).json({ error: "Text cannot be empty" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "text cannot be empty" 
+      });
     }
+    if (!language) {
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "language is required and must be 'en' or 'pl'" 
+      });
+    }
+    // Language validation is done by the service to allow for service-specific error messages
     if (speed && (speed < 0.5 || speed > 2.0)) {
-      return res.status(400).json({ error: "Speed must be between 0.5 and 2.0" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Speed must be between 0.5 and 2.0" 
+      });
     }
 
     const audioData = await generateTTS({
@@ -59,7 +78,7 @@ ttsRouter.post("/", async (req, res) => {
 ttsRouter.get("/voices", async (_req, res) => {
   try {
     const voices = await listVoices();
-    res.json({ voices });
+    res.json(voices);
   } catch (error) {
     console.error("Failed to list voices:", error);
     res.status(500).json({

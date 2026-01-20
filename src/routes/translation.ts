@@ -26,30 +26,49 @@ interface BatchTranslateRequest {
  */
 translationRouter.post("/", async (req: Request, res: Response) => {
   try {
-    const { text, source = "auto", target } = req.body as TranslateRequest;
+    const { text, source, target } = req.body as TranslateRequest;
 
     if (!text) {
-      return res.status(400).json({ error: "Text is required" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "text is required" 
+      });
+    }
+
+    if (!source) {
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "source language is required" 
+      });
     }
 
     if (!target) {
-      return res.status(400).json({ error: "Target language is required (en or pl)" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "target language is required (en or pl)" 
+      });
     }
 
     if (!["en", "pl"].includes(target)) {
-      return res.status(400).json({ error: "Target must be 'en' or 'pl'" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Target must be 'en' or 'pl'" 
+      });
     }
 
     if (!["en", "pl", "auto"].includes(source)) {
-      return res.status(400).json({ error: "Source must be 'en', 'pl', or 'auto'" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Source must be 'en', 'pl', or 'auto'" 
+      });
     }
 
     const result = await translate({ text, source, target });
 
     return res.json({
       success: true,
-      translation: result.translatedText,
-      source: result.detectedLanguage || source,
+      translatedText: result.translatedText,
+      detectedLanguage: result.detectedLanguage || source,
       target,
       confidence: result.confidence,
     });
@@ -68,28 +87,52 @@ translationRouter.post("/", async (req: Request, res: Response) => {
  */
 translationRouter.post("/batch", async (req: Request, res: Response) => {
   try {
-    const { texts, source = "auto", target } = req.body as BatchTranslateRequest;
+    const { texts, source, target } = req.body as BatchTranslateRequest;
 
-    if (!texts || !Array.isArray(texts) || texts.length === 0) {
-      return res.status(400).json({ error: "Array of texts is required" });
+    if (!texts || !Array.isArray(texts)) {
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Array of texts is required" 
+      });
+    }
+
+    // Handle empty array gracefully
+    if (texts.length === 0) {
+      return res.json([]);
     }
 
     if (texts.length > 100) {
-      return res.status(400).json({ error: "Maximum 100 texts per batch" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Maximum 100 texts per batch" 
+      });
+    }
+
+    if (!source) {
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "source language is required" 
+      });
+    }
+
+    if (!["en", "pl", "auto"].includes(source)) {
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Source must be 'en', 'pl', or 'auto'" 
+      });
     }
 
     if (!target || !["en", "pl"].includes(target)) {
-      return res.status(400).json({ error: "Target must be 'en' or 'pl'" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "Target must be 'en' or 'pl'" 
+      });
     }
 
     const results = await batchTranslate(texts, source, target);
 
-    return res.json({
-      success: true,
-      translations: results.map((r) => r.translatedText),
-      source,
-      target,
-    });
+    // Return array of translation objects directly
+    return res.json(results);
   } catch (error) {
     console.error("Batch translation error:", error);
     return res.status(500).json({
@@ -108,14 +151,17 @@ translationRouter.post("/detect", async (req: Request, res: Response) => {
     const { text } = req.body as { text: string };
 
     if (!text) {
-      return res.status(400).json({ error: "Text is required" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        message: "text is required" 
+      });
     }
 
     const result = await detectLanguage(text);
 
     return res.json({
       success: true,
-      language: result.language,
+      detectedLanguage: result.language,
       confidence: result.confidence,
     });
   } catch (error) {
@@ -135,10 +181,7 @@ translationRouter.get("/languages", async (_req: Request, res: Response) => {
   try {
     const languages = await getSupportedLanguages();
 
-    return res.json({
-      success: true,
-      languages,
-    });
+    return res.json(languages);
   } catch (error) {
     console.error("Failed to fetch languages:", error);
     return res.status(500).json({

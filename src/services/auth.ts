@@ -73,7 +73,7 @@ const saveUsers = (users: User[]): void => {
 };
 
 // Generate tokens
-const generateTokens = (user: User): AuthTokens => {
+export const generateTokens = (user: User): AuthTokens => {
   const payload = {
     userId: user.id,
     email: user.email,
