@@ -5,7 +5,7 @@ export const imageRouter = Router();
 
 interface ImageRequest {
   prompt: string;
-  provider?: "localai" | "stable-diffusion";
+  provider?: "stable-diffusion" | "localai";
   model?: string;
   size?: "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792";
   quality?: "standard" | "hd";
@@ -16,7 +16,7 @@ imageRouter.post("/", async (req, res) => {
   try {
     const {
       prompt,
-      provider = "localai",
+      provider = "stable-diffusion",
       model,
       size = "1024x1024",
       quality = "hd",
