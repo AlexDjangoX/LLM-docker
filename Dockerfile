@@ -32,8 +32,8 @@ COPY --from=builder /app/dist ./dist
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Change ownership
-RUN chown -R nodejs:nodejs /app
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chown -R nodejs:nodejs /app
 
 USER nodejs
 

@@ -37,6 +37,11 @@ ttsRouter.post("/", async (req, res) => {
       speaker,
     });
 
+    // Log user activity if authenticated
+    if (req.user) {
+      console.log(`TTS request by ${req.user.username}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`);
+    }
+
     // Coqui TTS returns WAV audio
     res.setHeader("Content-Type", "audio/wav");
     res.setHeader("Content-Disposition", 'attachment; filename="speech.wav"');

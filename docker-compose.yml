@@ -20,7 +20,12 @@ services:
       # Security - Frontend URL for CORS
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      # JWT Authentication (loaded from .env file)
+      - JWT_SECRET
+      - JWT_REFRESH_SECRET
     restart: unless-stopped
+    volumes:
+      - user-data:/app/data
     networks:
       - llm-network
     # Start after AI services are up (but don't require healthy - allows graceful degradation)
@@ -169,6 +174,8 @@ volumes:
     name: xtts-data
   libretranslate-data:
     name: libretranslate-data
+  user-data:
+    name: user-data
   # Uncomment if using Stable Diffusion:
   # stable-diffusion-data:
   #   name: stable-diffusion-data

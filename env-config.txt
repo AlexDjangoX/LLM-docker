@@ -1,0 +1,20 @@
+# API Server Configuration
+PORT=3000
+NODE_ENV=production
+
+# CORS - Frontend URLs (comma-separated)
+ALLOWED_ORIGINS=http://localhost:3001,https://your-frontend-domain.com
+
+# Rate Limiting
+RATE_LIMIT_MAX=100
+
+# JWT Authentication Secrets (CHANGE THESE IN PRODUCTION!)
+# Generate secure random strings for production
+JWT_SECRET=8f2e8b3c9d1a4f7e6b5c8d9e2f3a4b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2
+JWT_REFRESH_SECRET=f1e2d3c4b5a6978f9e0d1c2b3a495867f8e9d0c1b2a3948576f9e8d7c6b5a4938271f0e9d8c7b6a5948372f1e0d9c8b7a6958473f2e1d0c9b8a7968574f3e2d1c0b9a8979685
+
+# AI Service URLs (Docker internal - don't change unless running services externally)
+OLLAMA_BASE_URL=http://ollama:11434
+STABLE_DIFFUSION_URL=http://stable-diffusion:7860
+XTTS_URL=http://xtts:80
+LIBRETRANSLATE_URL=http://libretranslate:5000

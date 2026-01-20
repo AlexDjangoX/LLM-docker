@@ -10,7 +10,8 @@
 
 | Service | Status | Technology | Port | Notes |
 |---------|--------|------------|------|-------|
-| **API Gateway** | ✅ Active | Node.js/Express/TypeScript | 3000 | Routes all requests |
+| **API Gateway** | ✅ Active | Node.js/Express/TypeScript | 3000 | JWT auth, rate limiting |
+| **Authentication** | ✅ Active | JWT + bcrypt | - | User management, password security |
 | **Chat AI** | ✅ Active | Ollama (llama3.1:8b) | 11434 | Requires model download |
 | **Translation** | ✅ Active | LibreTranslate | 5000 | EN ↔ PL optimized |
 | **Text-to-Speech** | ✅ Active | XTTS v2 Neural TTS | 8000 | 22 speakers, 17 languages |
@@ -23,6 +24,9 @@
 - **Educational Chat** - Ollama LLM for tutoring and conversation
 - **Complete Data Sovereignty** - All processing happens locally
 - **No API Keys Required** - Fully self-hosted, no external dependencies
+- **Secure Authentication** - JWT-based user management with account controls
+- **Password Security** - Strong password validation and secure hashing
+- **Account Management** - Change password and self-delete accounts
 
 ---
 
@@ -35,11 +39,28 @@
 - 50GB free disk space
 - NVIDIA GPU (optional, for image generation)
 
-### 1. Start Services
+### 1. Environment Setup
+
+Environment variables are already configured in `.env` file with secure JWT secrets. For production deployment:
 
 ```bash
-cd llm-services
+# Generate new secure JWT secrets:
+JWT_SECRET=$(openssl rand -hex 64)
+JWT_REFRESH_SECRET=$(openssl rand -hex 64)
+```
 
+**Note**: `setup-env.sh` and `env-config.txt` are kept for documentation/reference purposes only.
+
+### Default Admin Account
+
+The system includes a default admin account:
+- **Email:** admin@example.com
+- **Password:** admin123
+- **⚠️ CHANGE THIS PASSWORD IMMEDIATELY IN PRODUCTION!**
+
+### 2. Start Services
+
+```bash
 # Start all services (first run downloads ~5GB of models)
 docker-compose up -d
 
@@ -47,7 +68,7 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-### 2. Download Ollama Model (First Time)
+### 3. Download Ollama Model (First Time)
 
 ```bash
 # Recommended for bilingual education (~8GB RAM)
@@ -57,7 +78,7 @@ docker exec ollama ollama pull llama3.1:8b
 docker exec ollama ollama pull llama3.2:3b
 ```
 
-### 3. Verify Services
+### 4. Verify Services
 
 ```bash
 # Check all containers
@@ -75,7 +96,7 @@ curl -X POST http://localhost:3000/api/translate \
 curl http://localhost:3000/api/tts/voices
 ```
 
-### 4. Start Frontend
+### 5. Start Frontend
 
 ```bash
 cd ../self-hosted
@@ -172,10 +193,99 @@ POST /api/translate
 - `POST /api/translate/detect` - Detect language
 - `GET /api/translate/languages` - List supported languages
 
+### Authentication
+
+#### Register User
+```bash
+POST /api/auth/register
+```
+
+```json
+{
+  "email": "user@example.com",
+  "username": "username",
+  "password": "StrongPass123!"
+}
+```
+
+#### Login
+```bash
+POST /api/auth/login
+```
+
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login successful",
+  "user": {
+    "userId": "...",
+    "email": "...",
+    "username": "...",
+    "role": "..."
+  },
+  "tokens": {
+    "accessToken": "...",
+    "refreshToken": "..."
+  }
+}
+```
+
+#### Change Password
+```bash
+POST /api/auth/change-password
+Authorization: Bearer <access_token>
+```
+
+```json
+{
+  "currentPassword": "oldpassword",
+  "newPassword": "NewStrongPass123!",
+  "confirmPassword": "NewStrongPass123!"
+}
+```
+
+#### Delete Account
+```bash
+POST /api/auth/delete-account
+Authorization: Bearer <access_token>
+```
+
+```json
+{
+  "password": "currentpassword"
+}
+```
+
+#### Validate Password Strength
+```bash
+POST /api/auth/validate-password
+```
+
+```json
+{
+  "password": "passwordtocheck"
+}
+```
+
+**Password Requirements:**
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+
 ### Text-to-Speech
 
 ```bash
 POST /api/tts
+Authorization: Bearer <access_token>
 ```
 
 ```json
@@ -197,6 +307,7 @@ POST /api/tts
 **List Speakers:**
 ```bash
 GET /api/tts/voices
+Authorization: Bearer <access_token>
 ```
 
 ### Image Generation (Disabled)

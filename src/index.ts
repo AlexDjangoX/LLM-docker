@@ -7,6 +7,9 @@ import { ttsRouter } from "./routes/tts.js";
 import { chatRouter } from "./routes/chat.js";
 import { imageRouter } from "./routes/images.js";
 import { translationRouter } from "./routes/translation.js";
+import { authRouter } from "./routes/auth.js";
+import { optionalAuth } from "./middleware/auth.js";
+import { initializeDefaultAdmin } from "./services/auth.js";
 
 dotenv.config();
 
@@ -43,16 +46,21 @@ const apiLimiter = rateLimit({
 // Apply rate limiting to all API routes
 app.use("/api/", apiLimiter);
 
+// Optional authentication for all routes (adds user context if token provided)
+app.use("/api/", optionalAuth);
+
 // Health check (no rate limit)
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
+  res.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    user: req.user ? { username: req.user.username, role: req.user.role } : null,
   });
 });
 
 // Routes
+app.use("/api/auth", authRouter);
 app.use("/api/tts", ttsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/images", imageRouter);
@@ -72,14 +80,18 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   });
 });
 
+// Initialize default admin user on startup
+initializeDefaultAdmin().catch(console.error);
+
 // Graceful shutdown
 const server = app.listen(PORT, () => {
   console.log(`🚀 LLM Services running on http://localhost:${PORT}`);
+  console.log(`🔐 Auth: POST /api/auth/register, /api/auth/login, /api/auth/refresh, /api/auth/change-password, /api/auth/delete-account`);
   console.log(`📝 TTS: POST /api/tts`);
   console.log(`💬 Chat: POST /api/chat`);
   console.log(`🎨 Images: POST /api/images`);
   console.log(`🌍 Translate: POST /api/translate`);
-  console.log(`🔒 Security: Rate limiting enabled`);
+  console.log(`🔒 Security: JWT authentication + rate limiting enabled`);
   if (allowedOrigins.length === 0) {
     console.warn(`⚠️  WARNING: CORS is disabled. Set ALLOWED_ORIGINS in production!`);
   }
