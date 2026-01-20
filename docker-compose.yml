@@ -121,6 +121,9 @@ services:
       - xtts-data:/app/tts_models
     environment:
       - COQUI_TOS_AGREED=1
+      # Increase timeout for long text processing
+      - GUNICORN_TIMEOUT=600  # 10 minutes
+      - GUNICORN_WORKER_TIMEOUT=600
     restart: unless-stopped
     networks:
       - llm-network

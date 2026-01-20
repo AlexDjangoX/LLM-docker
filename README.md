@@ -616,10 +616,17 @@ Content-Type: application/json
 **Response:** Binary WAV audio file (Content-Type: `audio/wav`)
 
 **Parameters:**
-- `text` (string, required): Text to synthesize (max 50KB)
+- `text` (string, required): Text to synthesize (max 50KB, automatically chunked)
 - `language` (string, required): Language code - `"en"` or `"pl"`
 - `speaker` (string, optional): Speaker name from `/api/tts/voices`
 - `speed` (number, optional): Speech rate 0.5-2.0 (default: 1.0)
+
+**Technical Details:**
+- XTTS v2 has an internal 250-character limit per request
+- Longer texts are automatically split at sentence boundaries
+- Audio chunks are seamlessly concatenated into a single WAV file
+- Maximum supported length: 50,000 characters (~4-5 minutes of audio)
+- Processing time: ~30-60 seconds per 250-character chunk on CPU
 
 **List Available Voices:**
 ```bash
@@ -851,12 +858,44 @@ First run downloads language models (~2-3 minutes):
 docker logs libretranslate
 ```
 
+### TTS "Failed to generate speech" Error
+
+This is the most common error. Run the diagnostic:
+
+```bash
+node check-xtts.js
+```
+
+**Quick fixes:**
+1. Check if XTTS is running: `docker ps | grep xtts`
+2. If not running: `docker-compose up -d xtts`
+3. Check logs: `docker logs xtts`
+4. Verify environment: `echo $XTTS_URL` (should be `http://xtts:80`)
+
+**See [TROUBLESHOOTING-TTS.md](./TROUBLESHOOTING-TTS.md) for detailed guide.**
+
 ### TTS Takes Too Long
 
-XTTS on CPU takes 20-30s per request. Options:
-1. Keep text short (under 500 chars)
-2. Use GPU server for faster generation
-3. Pre-generate common phrases
+XTTS on CPU processes at ~30-60s per 250-character chunk. For long texts:
+1. Expected processing time = `(text.length / 240) * 45 seconds`
+2. Example: 1000 characters = ~4 chunks = ~3 minutes
+3. Options for faster processing:
+   - Use GPU server (5-10x faster)
+   - Pre-generate common phrases
+   - Keep text under 500 characters for quick responses
+
+### TTS Text Cut Off / Incomplete
+
+✅ **Fixed** - The service now automatically chunks long texts:
+- Texts are split at sentence boundaries every 240 characters
+- Chunks are processed sequentially
+- Audio is seamlessly concatenated
+- Maximum supported: 50,000 characters (~4-5 minutes of audio)
+
+If you're still experiencing cutoffs:
+1. Check backend logs: `docker-compose logs -f llm-services`
+2. Verify chunking is working (look for "Split into N chunks")
+3. Ensure XTTS timeout is sufficient in `docker-compose.yml`
 
 ### Out of Memory
 

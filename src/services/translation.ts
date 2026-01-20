@@ -39,7 +39,6 @@ export async function translate(options: TranslationOptions): Promise<Translatio
     return { translatedText: text };
   }
 
-  console.log(`Translation request: ${source} → ${target}, text length=${text.length}`);
 
   const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, {
     method: "POST",

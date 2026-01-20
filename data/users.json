@@ -1,3 +1,78 @@
 [
- 
+  {
+    "id": "1768946113581yfvk1f39k",
+    "email": "chat-test-1768946113223-nixf8@example.com",
+    "username": "chattest1768946113223-nixf8",
+    "passwordHash": "$2b$12$ByH8Twqdycicxd1Grr1a3uje9sqq0.5NUsoWgZm0syzAT.e.TIlD2",
+    "createdAt": "2026-01-20T21:55:13.581Z",
+    "role": "user"
+  },
+  {
+    "id": "176894611392865pputcfx",
+    "email": "test-1768946113580-k24yg@example.com",
+    "username": "testuser1768946113580-k24yg",
+    "passwordHash": "$2b$12$iqiDIQm80QMpuv3R4hSG0Ozhkg2oJQn0DQGjEDmg8PoELoGlpqXDS",
+    "createdAt": "2026-01-20T21:55:13.928Z",
+    "role": "user"
+  },
+  {
+    "id": "1768946114302d6syj1scl",
+    "email": "test-1768946113986-6qb9c@example.com",
+    "username": "testuser1768946113986-6qb9c",
+    "passwordHash": "$2b$12$FfnAPQt3XtgZ23ZSc3flpOzCAsjp3UQyimo1gde1i3CTrG/4HOlgK",
+    "createdAt": "2026-01-20T21:55:14.302Z",
+    "role": "user",
+    "lastLogin": "2026-01-20T21:55:14.648Z"
+  },
+  {
+    "id": "17689461150174n6034pmy",
+    "email": "test-1768946114666-tbjjn@example.com",
+    "username": "testuser1768946114666-tbjjn",
+    "passwordHash": "$2b$12$LJwXG1BohI2fWlguZBLB9OHEX3u7.MYix3Cm9XtFKxP/OaWtMYkJK",
+    "createdAt": "2026-01-20T21:55:15.017Z",
+    "role": "user"
+  },
+  {
+    "id": "1768946115668v3nxqprsz",
+    "email": "test-1768946115364-j0ctf@example.com",
+    "username": "admin",
+    "passwordHash": "$2b$12$4DZBQnMBQJ9oG7c5ah7YB.bxS35dqP3vx2o1jyHfFPABsDCX42YNC",
+    "createdAt": "2026-01-20T21:55:15.668Z",
+    "role": "admin",
+    "lastLogin": "2026-01-20T21:55:16.006Z"
+  },
+  {
+    "id": "1768946116321kpd52to8c",
+    "email": "regular-user@example.com",
+    "username": "regularuser",
+    "passwordHash": "$2b$12$DsDW9e8IvdNAecBxdiWU3OrZIudMn4s0kJ5dOtTls5jrnpeetMhS6",
+    "createdAt": "2026-01-20T21:55:16.321Z",
+    "role": "user"
+  },
+  {
+    "id": "1768946116643svty3ycgl",
+    "email": "test-1768946116327-o6dxn@example.com",
+    "username": "testuser1768946116327-o6dxn",
+    "passwordHash": "$2b$12$28OJS92FOmqYJPS2HSVvO.geNPbliQ5q4Pa2a0fadBbm14h7K0Aui",
+    "createdAt": "2026-01-20T21:55:16.643Z",
+    "role": "user"
+  },
+  {
+    "id": "17689461184874f0v55byk",
+    "email": "test-1768946118176-ct5zx@example.com",
+    "username": "testadmin",
+    "passwordHash": "$2b$12$eT/p5ahnvXl.iTW0WpwAdOLkjItZdhtw138jzive3s5m/viN8sSV6",
+    "createdAt": "2026-01-20T21:55:18.487Z",
+    "role": "admin",
+    "lastLogin": "2026-01-20T21:55:18.780Z"
+  },
+  {
+    "id": "1768946119082bf7a83pes",
+    "email": "test-1768946118791-iq218@example.com",
+    "username": "testuser1768946118791-iq218",
+    "passwordHash": "$2b$12$2B7bDCzowC2j27GkCMRma.CGK/F87ydFUoKRi9kZZW5M3FqGFtwUa",
+    "createdAt": "2026-01-20T21:55:19.082Z",
+    "role": "user",
+    "lastLogin": "2026-01-20T21:55:19.377Z"
+  }
 ]
