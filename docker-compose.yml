@@ -13,7 +13,7 @@ services:
       - NODE_ENV=production
       # Self-hosted providers
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-      - LOCALAI_BASE_URL=${LOCALAI_BASE_URL:-http://localai:8080}
+      - STABLE_DIFFUSION_URL=${STABLE_DIFFUSION_URL:-http://stable-diffusion:7860}
       - OPENTTS_URL=${OPENTTS_URL:-http://opentts:5500}
       # Security
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
@@ -24,11 +24,14 @@ services:
     networks:
       - llm-network
     depends_on:
-      - ollama
-      - localai
-      - opentts
+      ollama:
+        condition: service_healthy
+      stable-diffusion:
+        condition: service_healthy
+      opentts:
+        condition: service_started
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -45,6 +48,12 @@ services:
     restart: unless-stopped
     networks:
       - llm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     # GPU support (uncomment if you have NVIDIA GPU on Hetzner)
     # deploy:
     #   resources:
@@ -54,19 +63,26 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # LocalAI with image generation support
-  localai:
-    image: localai/localai:latest-aio-cpu
-    container_name: localai
+  # RunPod Stable Diffusion - Reliable and fast image generation
+  stable-diffusion:
+    image: runpod/stable-diffusion:web-automatic
+    container_name: stable-diffusion
     ports:
-      - "8080:8080"
+      - "7860:7860"
     volumes:
-      - localai-models:/models
+      - stable-diffusion-models:/stable-diffusion-webui/models/Stable-diffusion
+      - stable-diffusion-outputs:/stable-diffusion-webui/outputs
     environment:
-      - MODELS_PATH=/models
+      - WEBUI_ARGS=--api --listen --port 7860 --no-half --skip-torch-cuda-test --enable-insecure-extension-access --no-download-sd-model
     restart: unless-stopped
     networks:
       - llm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 300s
     # GPU support (uncomment if you have NVIDIA GPU)
     # deploy:
     #   resources:
@@ -82,9 +98,22 @@ services:
     container_name: opentts
     ports:
       - "5500:5500"
+    environment:
+      - TTS__PIPE__LENGTH_SCALE=1.0
+      - TTS__PIPE__NOISE_SCALE=0.667
+      - TTS__PIPE__NOISE_W=0.8
+      - TTS__PIPE__SPEAKER_EMBEDDING_DIMENSION=256
+    volumes:
+      - opentts-models:/app/models
     restart: unless-stopped
     networks:
       - llm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5500/api/tts?text=test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   llm-network:
@@ -92,4 +121,6 @@ networks:
 
 volumes:
   ollama-data:
-  localai-models:
+  stable-diffusion-models:
+  stable-diffusion-outputs:
+  opentts-models:
