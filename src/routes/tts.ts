@@ -6,7 +6,7 @@ export const ttsRouter = Router();
 interface TTSRequest {
   text: string;
   voice?: string;
-  provider?: "piper" | "coqui";
+  provider?: "opentts";
   model?: string;
   stability?: number;
   similarity_boost?: number;
@@ -14,7 +14,7 @@ interface TTSRequest {
 
 ttsRouter.post("/", async (req, res) => {
   try {
-    const { text, voice, provider = "coqui", model, stability, similarity_boost } = req.body as TTSRequest;
+    const { text, voice, provider = "opentts", model, stability, similarity_boost } = req.body as TTSRequest;
 
     // Input validation
     if (!text || typeof text !== "string") {
